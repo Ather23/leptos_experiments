@@ -39,34 +39,21 @@ pub fn App() -> impl IntoView {
     }
 }
 
-// {
-// "userId": 1,
-// "id": 1,
-// "title": "delectus aut autem",
-// "completed": false
-// }
-
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Todo {
-    userId: i8,
+    #[serde(rename = "userId")]
+    user_id: i8,
     id: i8,
     title: String,
-    competed: bool,
+    completed: bool,
 }
 
 #[server(FetchTodo, "/api")]
 pub async fn fetch_todo() -> Result<Todo, ServerFnError> {
-    // let res: Todo = reqwasm::http::Request
-    //     ::get(&format!("https://jsonplaceholder.typicode.com/todos/1"))
-    //     .send().await?
-    //     .json::<Todo>().await?;
-
-    Ok(Todo {
-        userId: 1,
-        title: "Title".to_string(),
-        id: 0,
-        competed: true,
-    })
+    let res = reqwest
+        ::get(&format!("https://jsonplaceholder.typicode.com/todos/1")).await?
+        .json::<Todo>().await?;
+    Ok(res)
 }
 
 #[component]
@@ -127,12 +114,12 @@ fn HomePage() -> impl IntoView {
                         Ok(t) => { 
                             view! {
                                 <h1>"TEST"</h1>
-                                <p>{t.userId}</p>
+                                <p>{t.title}</p>
                             }.into_view()
                         },
                         Err(e) =>{ 
                             view! { 
-                                <p>"Error"</p> 
+                                <p>{e.to_string()}</p> 
                             }
                         }.into_view(),
                     }
@@ -142,38 +129,4 @@ fn HomePage() -> impl IntoView {
         </Transition>
         </div>
     }
-    // let todo = fetch_todo();
-    // let x = move || {
-    //     async {
-    //         let tdo: Result<Todo, ServerFnError> = fetch_todo().await;
-    //         let x = match tdo {
-    //             Ok(_t) => {
-    //                 view! {
-    //                     <h1>"Test"</h1>
-    //                     <p>{_t.userId}</p>
-    //                 }
-    //             }
-    //             Err(e) => { Err(e) }
-    //         };
-    //     }
-    // };
-
-    // // let todo_view = todo.and_then(|x|{
-    // //     view!{
-    // //         <p>x.title</p>
-    // //     }
-    // // });
-
-    // // Creates a reactive value to update the button
-    // let (count, set_count) = create_signal(0);
-    // let on_click = move |_|
-    //     set_count.update(|count| {
-    //         *count += 1;
-    //     });
-
-    // view! {
-    //     <h1>"Welcome to Leptos!"</h1>
-    //     // <p>serde_json::to_string(&_todo)</p>
-    //     <button class="bg-blue-500 dark:hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" on:click=on_click>"Click Me: " {count}</button>
-    // }
 }
