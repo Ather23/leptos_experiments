@@ -26,6 +26,7 @@ tracing = { version = "0.1.37", optional = true }
 http = "0.2.8"
 serde = "1.0.193"
 reqwest = { version = "0.11", features = ["json"] }
+markdown = "1.0.0-alpha.16"
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
