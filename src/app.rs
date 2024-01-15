@@ -1,5 +1,9 @@
-use crate::error_template::{ AppError, ErrorTemplate };
-use leptos::*;
+mod chat;
+
+use std::{ sync::{ Arc, Mutex }, ops::Deref, thread, borrow::Borrow };
+
+use crate::{ error_template::{ AppError, ErrorTemplate }, app::chat::{ ChatMsg, ChatCtx } };
+use leptos::{ *, html::Input };
 use leptos_meta::*;
 use leptos_router::*;
 use serde::{ Deserialize, Serialize };
@@ -29,15 +33,8 @@ pub fn App() -> impl IntoView {
             }
             .into_view()
         }>
-            <main>
                 <NavBar/>
-                <Content/>
-                    
-                
-                    <Routes>
-                        <Route path="/todo" view=HomePage/>
-                    </Routes>
-            </main>
+                <Content/>                
         </Router>
         </>
     }
@@ -65,19 +62,74 @@ fn Content() -> impl IntoView {
     view! {
         <div class="h-screen flex">
             <Sidebar/>
-            <main class="w-3/4">
-                <h2 class="text-2xl font-semibold mb-4 text-white">"Main Content"</h2>
+            <main class="lg:flex-1 p-4">                               
+                <Routes>
+                    <Route path="/todo" view=HomePage/>
+                    <Route path="/chat" view=ChatArea/>
+                </Routes>
             </main>
-
         </div>
+    }
+}
 
+#[component]
+fn Message(chat_msg: ChatMsg) -> impl IntoView {
+    let msg = format!("{}:{}", chat_msg.user_type, chat_msg.message);
+    view! {
+        <p class="text-white">{msg}</p>
+    }
+}
+
+#[component]
+fn ChatArea() -> impl IntoView {
+    let mut msgs = Vec::<ChatMsg>::new();
+    let chat_ctx = Arc::new(Mutex::new(ChatCtx::new()));
+
+    let (chat_msgs, set_chat_msgs) = create_signal(msgs);
+    let input_element: NodeRef<Input> = create_node_ref();
+
+    view! {
+        <div class="w-1/2 h-1/2 bg-gray-200 rounded-full border-2 border-white">
+            <h1 class="text-white">Chat</h1>
+            <ul>
+                <For
+                    each=chat_msgs
+                    key=|msg| msg.get_id()
+                    children = move |msg:ChatMsg|{
+                        view! {
+                            <li><Message chat_msg=msg/></li>
+                        }
+                    }                    
+                />             
+            </ul>
+            <input type="text"
+                node_ref=input_element
+                class="border border-gray-300 rounded px-2 py-1 absolute bottom-4 left-4 w-1/2"/>
+                <button class="bg-blue-500 text-white px-4 py-2 absolute bottom-4 right-4" 
+                    on:click=move |ev| {   
+                        ev.prevent_default();
+                        let chat_clone = Arc::clone(&chat_ctx);   
+                        let input = input_element().unwrap().value(); 
+                        let mut msg_id:Option<i32> = None; 
+                        msg_id = Some(chat_clone.lock().expect("cloned chat is null").add_msg("bb".to_string(),"Agent".to_string()));
+                        // // logging::log!("{:?}", &input);
+                        // let input = input_element().unwrap().value(); 
+
+                        set_chat_msgs.update(move |m| {
+                            m.push(ChatMsg::new(msg_id.clone().unwrap(), input.clone(),"Agent".to_string()));
+                            // chat_ctx.
+                        });
+                    }>
+            Submit
+            </button>
+        </div>.
     }
 }
 
 #[component]
 fn Sidebar() -> impl IntoView {
     view! {
-            <aside class="w-1/4 bg-gray-800 p-4 text-white">
+            <aside class="lg:w-7/10 bg-gray-800 p-4 text-white">
                 <ul>
                   <li class="mb-4">
                     <a href="#" class="text-gray-400 hover:text-white">Dashboard</a>
