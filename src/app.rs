@@ -3,7 +3,7 @@ mod chat;
 use std::{ sync::{ Arc, Mutex }, ops::Deref, thread, borrow::Borrow };
 
 use crate::{ error_template::{ AppError, ErrorTemplate }, app::chat::{ ChatMsg, ChatCtx } };
-use leptos::{ *, html::Input };
+use leptos::{ *, html::Input, ev::submit };
 use leptos_meta::*;
 use leptos_router::*;
 use serde::{ Deserialize, Serialize };
@@ -82,11 +82,22 @@ fn Message(chat_msg: ChatMsg) -> impl IntoView {
 
 #[component]
 fn ChatArea() -> impl IntoView {
-    let mut msgs = Vec::<ChatMsg>::new();
+    let msgs = Vec::<ChatMsg>::new();
     let chat_ctx = Arc::new(Mutex::new(ChatCtx::new()));
-
     let (chat_msgs, set_chat_msgs) = create_signal(msgs);
     let input_element: NodeRef<Input> = create_node_ref();
+
+    // let predict = create_action(|input: &String| {
+    //     // the input is a reference, but we need the Future to own it
+    //     // this is important: we need to clone and move into the Future
+    //     // so it has a 'static lifetime
+    //     let input = input.to_owned();
+    //     async move { fetch_todo().await }
+    // });
+
+    // let submitted = predict.input();
+    // let pending = predict.pending();
+    // let todo = predict.value();
 
     view! {
         <div class="w-1/2 h-1/2 bg-gray-200 rounded-full border-2 border-white">
@@ -110,19 +121,25 @@ fn ChatArea() -> impl IntoView {
                         ev.prevent_default();
                         let chat_clone = Arc::clone(&chat_ctx);   
                         let input = input_element().unwrap().value(); 
-                        let mut msg_id:Option<i32> = None; 
-                        msg_id = Some(chat_clone.lock().expect("cloned chat is null").add_msg("bb".to_string(),"Agent".to_string()));
-                        // // logging::log!("{:?}", &input);
-                        // let input = input_element().unwrap().value(); 
-
+                        let msg_id = Some(chat_clone.lock().expect("cloned chat is null").add_msg(input.clone().to_string(),"Agent".to_string()));        
                         set_chat_msgs.update(move |m| {
                             m.push(ChatMsg::new(msg_id.clone().unwrap(), input.clone(),"Agent".to_string()));
-                            // chat_ctx.
-                        });
+                        });          
+
+                        // predict.dispatch("test".to_owned()); 
+                        // set_chat_msgs.update(move |m| {
+                        //     m.push(ChatMsg::new(msg_id.clone().unwrap()+1010,"Testing".to_string(),"User".to_string()));
+                        // });
+                        // {     
+                        // move | | {
+                        //     set_chat_msgs.update(move |m| {
+                        //         m.push(ChatMsg::new(msg_id.clone().unwrap(), input.clone(),"Agent".to_string()));
+                        //     });
+                        // }                                                    
                     }>
-            Submit
-            </button>
-        </div>.
+                    Submit
+                </button>           
+        </div>
     }
 }
 
