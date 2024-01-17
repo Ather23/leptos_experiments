@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct ChatMsg {
     id: Option<i32>,
     pub message: String,

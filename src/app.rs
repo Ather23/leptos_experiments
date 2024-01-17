@@ -83,28 +83,30 @@ fn Message(chat_msg: ChatMsg) -> impl IntoView {
 #[component]
 fn ChatArea() -> impl IntoView {
     let msgs = Vec::<ChatMsg>::new();
-    let chat_ctx = Arc::new(Mutex::new(ChatCtx::new()));
-    let (chat_msgs, set_chat_msgs) = create_signal(msgs);
+    // let chat_ctx = Arc::new(Mutex::new(ChatCtx::new()));
+    let (conversation, set_msg) = create_signal(ChatCtx::new());
+
+    let send = create_action(move |new_message: &String| {
+        // let msg = ChatMsg::new(101010, new_message, "User".to_string());
+        set_msg.update(move |c| {
+            c.add_msg(new_message.to_owned(), "User".to_string());
+        });
+        async move {
+            let todo = fetch_todo().await;
+            set_msg.update(move |c| {
+                c.add_msg(todo.unwrap().title, "Agent".to_string());
+            });
+        }
+    });
+
     let input_element: NodeRef<Input> = create_node_ref();
-
-    // let predict = create_action(|input: &String| {
-    //     // the input is a reference, but we need the Future to own it
-    //     // this is important: we need to clone and move into the Future
-    //     // so it has a 'static lifetime
-    //     let input = input.to_owned();
-    //     async move { fetch_todo().await }
-    // });
-
-    // let submitted = predict.input();
-    // let pending = predict.pending();
-    // let todo = predict.value();
 
     view! {
         <div class="w-1/2 h-1/2 bg-gray-200 rounded-full border-2 border-white">
             <h1 class="text-white">Chat</h1>
             <ul>
                 <For
-                    each=chat_msgs
+                    each=move || {conversation.get().chat_msgs}
                     key=|msg| msg.get_id()
                     children = move |msg:ChatMsg|{
                         view! {
@@ -119,26 +121,11 @@ fn ChatArea() -> impl IntoView {
                 <button class="bg-blue-500 text-white px-4 py-2 absolute bottom-4 right-4" 
                     on:click=move |ev| {   
                         ev.prevent_default();
-                        let chat_clone = Arc::clone(&chat_ctx);   
                         let input = input_element().unwrap().value(); 
-                        let msg_id = Some(chat_clone.lock().expect("cloned chat is null").add_msg(input.clone().to_string(),"Agent".to_string()));        
-                        set_chat_msgs.update(move |m| {
-                            m.push(ChatMsg::new(msg_id.clone().unwrap(), input.clone(),"Agent".to_string()));
-                        });          
-
-                        // predict.dispatch("test".to_owned()); 
-                        // set_chat_msgs.update(move |m| {
-                        //     m.push(ChatMsg::new(msg_id.clone().unwrap()+1010,"Testing".to_string(),"User".to_string()));
-                        // });
-                        // {     
-                        // move | | {
-                        //     set_chat_msgs.update(move |m| {
-                        //         m.push(ChatMsg::new(msg_id.clone().unwrap(), input.clone(),"Agent".to_string()));
-                        //     });
-                        // }                                                    
+                        send.dispatch(input);
                     }>
                     Submit
-                </button>           
+                </button>    
         </div>
     }
 }
